@@ -1,0 +1,16 @@
+body {
+    font-family: sans-serif;
+    text-align: center;
+    background-color: #f0f0f0;
+}
+
+.container {
+    margin: 0 auto;
+    width: 640px;
+    border: 10px solid #333;
+    background-color: #000;
+}
+
+h1, h2 {
+    color: #333;
+}

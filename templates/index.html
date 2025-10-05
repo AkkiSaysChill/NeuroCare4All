@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NeuroCare for All</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+    <h1>NeuroCare for All</h1>
+    <p>AI-Powered Stress and Focus Tracker</p>
+    <div class="container">
+        <video id="video" width="640" height="480" autoplay playsinline></video>
+        <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+    </div>
+    <h2>Focus Score: <span id="focus-score">...</span></h2>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+            const focusScore = document.getElementById('focus-score');
+
+            const socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+
+            socket.on('connect', function() {
+                console.log('Connected to server');
+            });
+
+            socket.on('focus_score', function(data) {
+                focusScore.innerHTML = data.score;
+            });
+
+            if (navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function (stream) {
+                        video.srcObject = stream;
+                    })
+                    .catch(function (error) {
+                        console.log("Something went wrong!", error);
+                    });
+            }
+
+            setInterval(() => {
+                if (video.srcObject) {
+                    context.drawImage(video, 0, 0, 640, 480);
+                    let data = canvas.toDataURL('image/jpeg', 0.5);
+                    socket.emit('frame', data);
+                }
+            }, 1000); // Send a frame every second
+        });
+    </script>
+</body>
+</html>
