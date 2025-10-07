@@ -1,4 +1,4 @@
 Flask
 Flask-SocketIO
-opencv-python-headless
 numpy
+opencv-python

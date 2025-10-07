@@ -5,50 +5,139 @@
     <title>NeuroCare for All</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
+  <!-- very cool focus tracker   -->
+
 <body>
-    <h1>NeuroCare for All</h1>
-    <p>AI-Powered Stress and Focus Tracker</p>
-    <div class="container">
-        <video id="video" width="640" height="480" autoplay playsinline></video>
-        <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
-    </div>
-    <h2>Focus Score: <span id="focus-score">...</span></h2>
+    <header>
+        <h1>NeuroCare for All</h1>
+        <p>Your AI-Powered Focus Tracker</p>
+    </header>
+    <main>
+        <audio id="alarm-sound" src="{{ url_for('static', filename='alarm.mp3') }}" preload="auto"></audio>
+        <div class="video-container">
+            <video id="video" width="640" height="480" autoplay playsinline></video>
+            <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+        </div>
+        <div class="controls">
+            <button id="start-focus">Start Focus Session</button>
+            <button id="take-break">Take a Break</button>
+        </div>
+        <div class="dashboard">
+            <div class="focus-score">
+                <h2>Focus Score</h2>
+                <p id="focus-score-value">...</p>
+            </div>
+            <div class="focus-history">
+                <h2>Focus History</h2>
+                <canvas id="focus-chart"></canvas>
+            </div>
+        </div>
+    </main>
 
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {
             const video = document.getElementById('video');
             const canvas = document.getElementById('canvas');
             const context = canvas.getContext('2d');
-            const focusScore = document.getElementById('focus-score');
+            const focusScoreValue = document.getElementById('focus-score-value');
+            const startButton = document.getElementById('start-focus');
+            const breakButton = document.getElementById('take-break');
+
+            let focusSessionInterval;
+            let focusData = [];
+            let timeData = [];
+            let focusChart;
 
             const socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
 
             socket.on('connect', function() {
-                console.log('Connected to server');
+                // console.log('Connected to server');
             });
 
             socket.on('focus_score', function(data) {
-                focusScore.innerHTML = data.score;
+                const score = data.score;
+                focusScoreValue.innerHTML = score;
+
+
+
+                // Add data to chart
+                const now = new Date();
+                timeData.push(now.toLocaleTimeString());
+                focusData.push(score);
+                if (timeData.length > 20) {
+                    timeData.shift();
+                    focusData.shift();
+                }
+                focusChart.update();
             });
 
-            if (navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ video: true })
-                    .then(function (stream) {
-                        video.srcObject = stream;
-                    })
-                    .catch(function (error) {
-                        console.log("Something went wrong!", error);
-                    });
-            }
+            socket.on('alarm', function() {
+                const alarmSound = document.getElementById('alarm-sound');
+                alarmSound.play();
+            });
 
-            setInterval(() => {
-                if (video.srcObject) {
-                    context.drawImage(video, 0, 0, 640, 480);
-                    let data = canvas.toDataURL('image/jpeg', 0.5);
-                    socket.emit('frame', data);
+            startButton.addEventListener('click', () => {
+                if (navigator.mediaDevices.getUserMedia) {
+                    navigator.mediaDevices.getUserMedia({ video: true })
+                        .then(function (stream) {
+                            video.srcObject = stream;
+                            startButton.disabled = true;
+                            breakButton.disabled = false;
+
+                            focusSessionInterval = setInterval(() => {
+                                if (video.srcObject) {
+                                    context.drawImage(video, 0, 0, 640, 480);
+                                    let data = canvas.toDataURL('image/jpeg', 0.5);
+                                    socket.emit('frame', data);
+                                }
+                            }, 1000); // Send a frame every second
+                        })
+                        .catch(function (error) {
+                            console.log("Something went wrong!", error);
+                        });
                 }
-            }, 1000); // Send a frame every second
+            });
+
+            breakButton.addEventListener('click', () => {
+                clearInterval(focusSessionInterval);
+                const stream = video.srcObject;
+                const tracks = stream.getTracks();
+
+                tracks.forEach(function(track) {
+                    track.stop();
+                });
+
+                video.srcObject = null;
+                startButton.disabled = false;
+                breakButton.disabled = true;
+            });
+
+            // Chart.js setup
+            const ctx = document.getElementById('focus-chart').getContext('2d');
+            focusChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timeData,
+                    datasets: [{
+                        label: 'Focus Score',
+                        data: focusData,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1,
+                        fill: false
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
         });
     </script>
 </body>
