@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NeuroCare for All</title>
+    <title>Focus Center</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -12,7 +12,7 @@
 
 <body>
     <header>
-        <h1>NeuroCare for All</h1>
+        <h1>Focus Center</h1>
         <p>Your AI-Powered Focus Tracker</p>
     </header>
     <main>
@@ -37,6 +37,7 @@
         </div>
     </main>
 
+    <!-- JavaScript to handle video streaming and socket communication -->
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {
             const video = document.getElementById('video');
@@ -74,6 +75,7 @@
                 focusChart.update();
             });
 
+            // play alarm sound on low focus score (i.e when score is 0, it means there is no face in the frame )
             socket.on('alarm', function() {
                 const alarmSound = document.getElementById('alarm-sound');
                 alarmSound.play();
@@ -138,6 +140,8 @@
                     }
                 }
             });
+
+          // might add a break timer later
         });
     </script>
 </body>
