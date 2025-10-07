@@ -1,4 +1,4 @@
-# NeuroCare for All (Python Version)
+# NeuroCare for All 
 
 This is a Python-based web application for the NeuroCare for All project. It uses Flask to serve a web page that captures video from your webcam, sends it to a Python backend for analysis, and displays a "Focus Score" in real-time.
 
